@@ -65,7 +65,7 @@ func NewRunner(options *Options) (string, error) {
 	stats.AddCounter("packets", uint64(0))
 	stats.AddCounter("total", uint64(Range))
 
-	if err := stats.Start(makePrintCallback(), time.Duration(5)*time.Second); err != nil {
+	if err := stats.Start(makePrintCallback(), time.Duration(1)*time.Second); err != nil {
 		glog.Warningf(ctx, "Couldn't start statistics: %s\n", err)
 	}
 
@@ -95,7 +95,7 @@ func NewRunner(options *Options) (string, error) {
 	}
 
 	tempfile := PrintResults(res)
-
+	stats.Stop()
 	return tempfile, nil
 }
 
@@ -166,9 +166,9 @@ func makePrintCallback() func(stats clistats.StatisticsClient) {
 
 		packets, _ := stats.GetCounter("packets")
 		total, _ := stats.GetCounter("total")
-		if packets == total {
-			stats.Stop()
-		}
+		// if packets == total {
+		// 	stats.Stop()
+		// }
 
 		builder.WriteString(" | 端口扫描进度: ")
 		builder.WriteString(clistats.String(packets))
