@@ -3,8 +3,11 @@
 ## 目标
 
 · perfect  完美
+
 · precise  精确
+
 · Painless 无痛
+
 
 ## 使用
 ```
