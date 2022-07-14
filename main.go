@@ -37,6 +37,7 @@ func main() {
 	go func() {
 		<-sigs
 		glog.Warningf(ctx, "CTRL+C 结束任务\n")
+
 		os.Exit(1)
 	}()
 	// 开始计时

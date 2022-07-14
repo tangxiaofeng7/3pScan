@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gogf/gf/os/gfile"
@@ -12,6 +14,7 @@ import (
 	"github.com/gogf/gf/v2/os/glog"
 	"github.com/gogf/gf/v2/util/guid"
 	"github.com/gookit/color"
+	"github.com/projectdiscovery/clistats"
 	"golang.org/x/sync/semaphore"
 )
 
@@ -47,8 +50,28 @@ func NewRunner(options *Options) (string, error) {
 	glog.Infof(context.TODO(), "设置扫描的主机: %v", Targets)
 	// glog.Infof(context.TODO(), "设置扫描端口: %v", Ports)
 
+	// 进度条
+	stats, err := clistats.New()
+
+	if err != nil {
+		glog.Warningf(ctx, "Couldn't create progress engine: %s\n", err)
+	}
+	Range := len(Targets) * len(Ports)
+
+	stats.AddStatic("ports", len(Ports))
+	stats.AddStatic("hosts", len(Targets))
+
+	stats.AddStatic("startedAt", time.Now())
+	stats.AddCounter("packets", uint64(0))
+	stats.AddCounter("total", uint64(Range))
+
+	if err := stats.Start(makePrintCallback(), time.Duration(5)*time.Second); err != nil {
+		glog.Warningf(ctx, "Couldn't start statistics: %s\n", err)
+	}
+
 	for _, target := range Targets {
 		for _, port := range Ports {
+			stats.IncrementCounter("packets", 1)
 			// glog.Infof(context.TODO(), "开始主机: %s扫描端口: %d", target, port)
 
 			if err := sem.Acquire(ctx, semAcquisitionWeight); err != nil {
@@ -61,8 +84,7 @@ func NewRunner(options *Options) (string, error) {
 				p := scan(target, port)
 				if p != 0 {
 					res = append(res, Result{target, port})
-
-					// glog.Noticef(context.TODO(), "主机%s扫描到开放端口: %d", target, p)
+					color.Green.Println(target, p, " open")
 
 				}
 			}(target, port)
@@ -72,7 +94,7 @@ func NewRunner(options *Options) (string, error) {
 		fmt.Printf("Failed to acquire semaphore: %v\n", err)
 	}
 
-	tempfile := printResults(res)
+	tempfile := PrintResults(res)
 
 	return tempfile, nil
 }
@@ -105,7 +127,7 @@ func scan(host string, port int) int {
 // 	return port
 // }
 
-func printResults(res []Result) (tempfile string) {
+func PrintResults(res []Result) (tempfile string) {
 	color.Green.Println("\nResults\n--------------")
 	tempfile = "./temp/" + guid.S() + ".txt"
 	for _, b := range res {
@@ -117,4 +139,47 @@ func printResults(res []Result) (tempfile string) {
 	}
 	color.Blue.Println("\n")
 	return tempfile
+}
+
+// 进度条
+
+const bufferSize = 128
+
+func makePrintCallback() func(stats clistats.StatisticsClient) {
+	builder := &strings.Builder{}
+	builder.Grow(bufferSize)
+
+	return func(stats clistats.StatisticsClient) {
+		builder.WriteRune('[')
+		startedAt, _ := stats.GetStatic("startedAt")
+		duration := time.Since(startedAt.(time.Time))
+		builder.WriteString(clistats.FmtDuration(duration))
+		builder.WriteRune(']')
+
+		hosts, _ := stats.GetStatic("hosts")
+		builder.WriteString(" | 扫描主机: ")
+		builder.WriteString(clistats.String(hosts))
+
+		ports, _ := stats.GetStatic("ports")
+		builder.WriteString(" | 扫描端口: ")
+		builder.WriteString(clistats.String(ports))
+
+		packets, _ := stats.GetCounter("packets")
+		total, _ := stats.GetCounter("total")
+
+		builder.WriteString(" | 扫描进度: ")
+		builder.WriteString(clistats.String(packets))
+		builder.WriteRune('/')
+		builder.WriteString(clistats.String(total))
+		builder.WriteRune(' ')
+		builder.WriteRune('(')
+		//nolint:gomnd // this is not a magic number
+		builder.WriteString(clistats.String(uint64(float64(packets) / float64(total) * 100.0)))
+		builder.WriteRune('%')
+		builder.WriteRune(')')
+		builder.WriteRune('\n')
+
+		fmt.Fprintf(os.Stderr, "%s", builder.String())
+		builder.Reset()
+	}
 }
