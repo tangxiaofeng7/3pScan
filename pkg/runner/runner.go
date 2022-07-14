@@ -166,8 +166,11 @@ func makePrintCallback() func(stats clistats.StatisticsClient) {
 
 		packets, _ := stats.GetCounter("packets")
 		total, _ := stats.GetCounter("total")
+		if packets == total {
+			stats.Stop()
+		}
 
-		builder.WriteString(" | 扫描进度: ")
+		builder.WriteString(" | 端口扫描进度: ")
 		builder.WriteString(clistats.String(packets))
 		builder.WriteRune('/')
 		builder.WriteString(clistats.String(total))

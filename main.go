@@ -58,12 +58,15 @@ func main() {
 			color.Danger.Print(gtime.Datetime(), " 开始httpx扫描,运行中...\n\n")
 			temphttpxfile := "./temp/" + guid.S() + ".txt"
 			httpxoptions := httpxRunner.Options{
-				Methods:      "GET",
-				InputFile:    tempfile,
-				ExtractTitle: true, //返回title
-				StatusCode:   true, //返回状态
-				Timeout:      3,    //超时
-				Output:       temphttpxfile,
+				Methods:            "GET",
+				InputFile:          tempfile,
+				ExtractTitle:       true, //返回title
+				StatusCode:         true, //返回状态
+				Timeout:            3,    //超时
+				OutputResponseTime: true, //返回响应时间
+				OutputServerHeader: true, //返回服务器头
+				Probe:              true, //返回探针
+				Output:             temphttpxfile,
 			}
 
 			httpxRunner, err := httpxRunner.New(&httpxoptions)
