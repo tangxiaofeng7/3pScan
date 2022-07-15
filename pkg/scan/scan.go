@@ -10,9 +10,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gogf/gf/container/garray"
 	"github.com/gogf/gf/os/gfile"
 	"github.com/gogf/gf/text/gstr"
 	"github.com/projectdiscovery/clistats"
+	"github.com/projectdiscovery/ipranger"
 	"golang.org/x/sync/semaphore"
 
 	"github.com/gogf/gf/os/glog"
@@ -28,7 +30,7 @@ type Result struct {
 }
 
 func NewPortScan(options *runner.Options) (string, error) {
-	// color.Red.Print(gtime.Datetime(), " 开始端口扫描,运行中...\n")
+	color.Red.Print(gtime.Datetime(), " --------------------开始端口扫描--------------------\n\n")
 
 	var Targets []string
 	var res []Result
@@ -52,6 +54,10 @@ func NewPortScan(options *runner.Options) (string, error) {
 		TempFile := gfile.GetContents(options.HostFile)
 		Targets = gstr.SplitAndTrim(TempFile, "\n")
 	}
+
+	// 对用户传入的Targets进行处理
+	Targets = HandleIP(Targets)
+
 	Range := len(Targets) * len(Ports)
 	color.Yellow.Println("扫描的主机数:", len(Targets), "扫描端口数:", Range)
 
@@ -100,15 +106,20 @@ func NewPortScan(options *runner.Options) (string, error) {
 	tempfile := PrintResults(res)
 	stats.Stop()
 
-	color.Danger.Println(gtime.Datetime(), " 端口扫描完成,结果保存在文件\n")
-	color.Yellow.Println(tempfile, "\n")
+	if !gfile.IsEmpty(tempfile) {
+		color.Red.Println(gtime.Datetime(), " 端口扫描完成,结果保存在文件 ", tempfile, "\n")
+	} else {
+		color.Red.Println(gtime.Datetime(), " 端口扫描完成,没有任何结果 ", "\n")
+
+	}
 
 	return tempfile, nil
 }
 
 func NewHttpxScan(tempfile string) (string, error) {
-	color.Danger.Print(gtime.Datetime(), " 开始httpx扫描,运行中...\n\n")
-	temphttpxfile := "./temp/" + guid.S() + ".txt"
+
+	color.Red.Print(gtime.Datetime(), " --------------------开始httpx扫描--------------------\n\n")
+	temphttpxfile := "./temp/" + guid.S() + ".csv"
 	httpxoptions := httpxRunner.Options{
 		Methods:            "GET",
 		InputFile:          tempfile,
@@ -130,8 +141,8 @@ func NewHttpxScan(tempfile string) (string, error) {
 	defer httpxRunner.Close()
 	httpxRunner.RunEnumeration()
 
-	color.Danger.Println("\n", gtime.Datetime(), "httpx扫描完成,结果保存在文件\n")
-	color.Yellow.Println(temphttpxfile, "\n")
+	color.Red.Println("\n", gtime.Datetime(), "httpx扫描完成,结果保存在文件", temphttpxfile, "\n")
+
 	return temphttpxfile, nil
 }
 
@@ -158,6 +169,52 @@ func PrintResults(res []Result) (tempfile string) {
 	}
 	color.Blue.Println("\n")
 	return tempfile
+}
+
+// 处理IP段
+func HandleIP(Target []string) (out []string) {
+	color.Red.Println(gtime.Datetime(), "HandleIp Starting......")
+	var ipTemp garray.StrArray
+	for _, target := range Target {
+		if _, _, err := net.ParseCIDR(target); err == nil { // 判断是否为ip段
+			a, _ := Hosts(target)
+			for _, b := range a {
+				ipTemp.Append(b)
+				out = append(out, b)
+			}
+		} else if ipranger.IsIP(target) && !ipTemp.Contains(target) { // 判断是否为ip
+			ipTemp.Append(target)
+			out = append(out, target)
+		} else if _, err := net.LookupIP(target); err == nil { // 判断是否为域名
+			out = append(out, target)
+		}
+
+	}
+
+	color.Red.Println(gtime.Datetime(), "HandleIp Over......")
+
+	return out
+}
+
+func Hosts(cidr string) ([]string, error) {
+	ip, ipnet, err := net.ParseCIDR(cidr)
+	if err != nil {
+		return nil, err
+	}
+	var ips []string
+	for ip := ip.Mask(ipnet.Mask); ipnet.Contains(ip); inc(ip) {
+		ips = append(ips, ip.String())
+	}
+	// remove network address and broadcast address
+	return ips[1 : len(ips)-1], nil
+}
+func inc(ip net.IP) {
+	for j := len(ip) - 1; j >= 0; j-- {
+		ip[j]++
+		if ip[j] > 0 {
+			break
+		}
+	}
 }
 
 // 进度条

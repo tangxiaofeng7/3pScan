@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/signal"
 
+	"github.com/gogf/gf/os/gfile"
 	"github.com/gogf/gf/os/glog"
 	"github.com/gogf/gf/text/gstr"
 	"github.com/gogf/gf/v2/os/gtime"
@@ -16,7 +17,6 @@ func init() {
 	config := glog.DefaultConfig()
 	config.Path = "log"
 	config.File = "{Y-m-d}.log"
-	// config.Flags = glog.F_FILE_SHORT
 
 	_ = glog.SetConfig(config)
 }
@@ -25,9 +25,9 @@ func main() {
 
 	runner.ShowBanner()
 
-	color.Yellow.Println(gtime.Datetime(), "程序初始化...")
+	color.White.Println(gtime.Datetime(), "程序初始化...")
 	options := runner.ParseOptions()
-	color.Yellow.Println("本次扫描模式为:", options.Model)
+	color.White.Println("本次扫描模式为:", options.Model)
 
 	// 优雅退出
 	sigs := make(chan os.Signal, 1)
@@ -50,11 +50,13 @@ func main() {
 		}
 
 		// httpx扫描
-		_, err = scan.NewHttpxScan(tempPort)
-		if err != nil {
-			glog.Errorf("无法创httpx扫描: %s\n", err)
+		if !gfile.IsEmpty(tempPort) {
+			_, err = scan.NewHttpxScan(tempPort)
+			if err != nil {
+				glog.Errorf("无法创httpx扫描: %s\n", err)
+			}
 		}
-
+		
 	}
 
 	end := gtime.Now().Sub(t)
