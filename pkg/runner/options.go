@@ -16,6 +16,7 @@ type Options struct {
 	TopPorts     string // 常见端口
 	ExcludePorts string // 排除端口
 	Timeout      int    // 超时时间
+	Tips         int    // 提示信息
 	Proxy        string // Socks5代理
 	Rate         int    // 扫描速率
 	Output       string // 输出文件
@@ -40,16 +41,17 @@ func ShowBanner() {
 
 func ParseOptions() *Options {
 	options := &Options{}
-	flag.StringVar(&options.Model, "mode", "port", "扫描模式")
-	flag.StringVar(&options.Host, "host", "", "主机地址")
-	flag.StringVar(&options.HostFile, "hostfile", "", "主机文件")
-	flag.StringVar(&options.Ports, "ports", "", "端口")
-	flag.StringVar(&options.PortsFile, "ports-file", "", "端口文件")
-	flag.StringVar(&options.TopPorts, "top-ports", "", "常用端口")
+	flag.StringVar(&options.Model, "mode", "all", "扫描模式,可选值:port、all")
+	flag.StringVar(&options.Host, "h", "", "主机地址")
+	flag.StringVar(&options.HostFile, "hf", "", "主机文件")
+	flag.StringVar(&options.Ports, "p", "", "端口")
+	flag.StringVar(&options.PortsFile, "pf", "", "端口文件")
+	flag.StringVar(&options.TopPorts, "top", "", "常用端口,可选值:full,100,1000")
 	flag.StringVar(&options.ExcludePorts, "exclude-ports", "", "排除端口")
-	flag.IntVar(&options.Timeout, "timeout", 1, "超时时间,默认1秒")
+	flag.IntVar(&options.Timeout, "t", 1, "超时时间,默认1秒")
+	flag.IntVar(&options.Tips, "tips", 5, "端口扫描提示信息间隔,默认5秒")
 	flag.StringVar(&options.Proxy, "proxy", "", "Socks5代理")
-	flag.StringVar(&options.Output, "output", "", "输出文件")
+	flag.StringVar(&options.Output, "o", "", "输出文件")
 	flag.BoolVar(&options.Version, "version", false, "显示版本")
 
 	flag.Parse()
