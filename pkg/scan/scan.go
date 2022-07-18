@@ -2,6 +2,7 @@ package scan
 
 import (
 	"3pScan/pkg/runner"
+	"bufio"
 	"context"
 	"fmt"
 	"net"
@@ -30,7 +31,7 @@ type Result struct {
 }
 
 func NewPortScan(options *runner.Options) (string, error) {
-	color.Red.Print(gtime.Datetime(), " --------------------开始端口扫描--------------------\n\n")
+	color.Red.Print("\n", gtime.Datetime(), " --------------------开始端口扫描--------------------\n\n")
 
 	var Targets []string
 	var res []Result
@@ -55,11 +56,27 @@ func NewPortScan(options *runner.Options) (string, error) {
 		Targets = gstr.SplitAndTrim(TempFile, "\n")
 	}
 
+	if options.Stdin {
+		scanner := bufio.NewScanner(os.Stdin)
+		for scanner.Scan() {
+			Targets = append(Targets, scanner.Text())
+		}
+	}
+
+	if len(Targets) == 0 {
+		color.Yellow.Println("未检测到有效主机！")
+		os.Exit(1)
+	}
+
+	if !options.Icmp {
+		Targets = runner.CheckLive(Targets, true)
+	}
+
 	// 对用户传入的Targets进行处理
 	Targets = HandleIP(Targets)
 
 	Range := len(Targets) * len(Ports)
-	color.Yellow.Println("扫描的主机数:", len(Targets), "扫描端口数:", Range)
+	color.Yellow.Println("扫描的主机数:", len(Targets), "扫描端口数:", Range, "\n")
 
 	// 进度条
 	stats, err := clistats.New()
@@ -106,11 +123,13 @@ func NewPortScan(options *runner.Options) (string, error) {
 	tempfile := PrintResults(res)
 	stats.Stop()
 
+	color.Red.Print(gtime.Datetime(), " --------------------结束端口扫描--------------------\n\n")
+
 	if !gfile.IsEmpty(tempfile) {
-		color.Red.Println(gtime.Datetime(), " 端口扫描完成,结果保存在文件 ", tempfile, "\n")
+
 	} else {
 		color.Red.Println(gtime.Datetime(), " 端口扫描完成,没有任何结果 ", "\n")
-
+		os.Exit(1)
 	}
 
 	return tempfile, nil
@@ -118,8 +137,8 @@ func NewPortScan(options *runner.Options) (string, error) {
 
 func NewHttpxScan(tempfile string) (string, error) {
 
-	color.Red.Print(gtime.Datetime(), " --------------------开始httpx扫描--------------------\n\n")
-	temphttpxfile := "./temp/" + guid.S() + ".csv"
+	color.Red.Print(gtime.Datetime(), " --------------------开始httpx扫描-------------------\n\n")
+	temphttpxfile := "./temp/" + guid.S() + ".txt"
 	httpxoptions := httpxRunner.Options{
 		Methods:            "GET",
 		InputFile:          tempfile,
@@ -128,7 +147,6 @@ func NewHttpxScan(tempfile string) (string, error) {
 		Timeout:            3,    //超时
 		OutputResponseTime: true, //返回响应时间
 		OutputServerHeader: true, //返回服务器头
-		Probe:              true, //返回探针
 		Output:             temphttpxfile,
 	}
 
@@ -140,8 +158,7 @@ func NewHttpxScan(tempfile string) (string, error) {
 
 	defer httpxRunner.Close()
 	httpxRunner.RunEnumeration()
-
-	color.Red.Println("\n", gtime.Datetime(), "httpx扫描完成,结果保存在文件", temphttpxfile, "\n")
+	color.Red.Print("\n", gtime.Datetime(), " --------------------结束httpx扫描-------------------\n\n")
 
 	return temphttpxfile, nil
 }
@@ -173,9 +190,9 @@ func PrintResults(res []Result) (tempfile string) {
 
 // 处理IP段
 func HandleIP(Target []string) (out []string) {
-	color.Red.Println(gtime.Datetime(), "HandleIp Starting......")
 	var ipTemp garray.StrArray
 	for _, target := range Target {
+		target = strings.TrimSpace(target)                  //去除空格
 		if _, _, err := net.ParseCIDR(target); err == nil { // 判断是否为ip段
 			a, _ := Hosts(target)
 			for _, b := range a {
@@ -190,9 +207,6 @@ func HandleIP(Target []string) (out []string) {
 		}
 
 	}
-
-	color.Red.Println(gtime.Datetime(), "HandleIp Over......")
-
 	return out
 }
 
@@ -248,7 +262,6 @@ func makePrintCallback() func(stats clistats.StatisticsClient) {
 		builder.WriteString(clistats.String(total))
 		builder.WriteRune(' ')
 		builder.WriteRune('(')
-		//nolint:gomnd // this is not a magic number
 		builder.WriteString(clistats.String(uint64(float64(packets) / float64(total) * 100.0)))
 		builder.WriteRune('%')
 		builder.WriteRune(')')

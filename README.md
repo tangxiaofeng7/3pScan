@@ -1,6 +1,6 @@
 # 3pScan
 
-## Target
+## 工具目标
 
 · perfect
 
@@ -8,17 +8,21 @@
 
 · Painless
 
-## Show
 
-![img](./image/img.gif)
-
-## Usage
+## 使用方法
 ```
 # 简单扫描
 ./3pScan -h baidu.com -top 1000
 
+# 禁用ping扫描
+./3pScan -h baidu.com -Pn -top 1000
+
 # 文件读取方式扫描
 ./3pScan -hf url.txt -top 1000
+
+# 终端传入扫描
+echo 127.0.0.1 | ./3pScan
+cat url.txt | ./3pScan
 
 # 全端口扫描
 ./3pScan -h baidu.com -top full

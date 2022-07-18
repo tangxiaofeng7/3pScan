@@ -11,6 +11,7 @@ type Options struct {
 	Model        string //扫描模式
 	Host         string // 主机地址
 	HostFile     string // 主机文件
+	Icmp         bool   // 是否icmp扫描
 	Ports        string // 端口
 	PortsFile    string // 端口文件
 	TopPorts     string // 常见端口
@@ -21,6 +22,7 @@ type Options struct {
 	Rate         int    // 扫描速率
 	Output       string // 输出文件
 	Version      bool   // 显示版本
+	Stdin        bool   // 是否从标准输入读取
 }
 
 const banner = `
@@ -44,6 +46,7 @@ func ParseOptions() *Options {
 	flag.StringVar(&options.Model, "mode", "all", "扫描模式,可选值:port、all")
 	flag.StringVar(&options.Host, "h", "", "主机地址")
 	flag.StringVar(&options.HostFile, "hf", "", "主机文件")
+	flag.BoolVar(&options.Icmp, "Pn", false, "是否icmp扫描")
 	flag.StringVar(&options.Ports, "p", "", "端口")
 	flag.StringVar(&options.PortsFile, "pf", "", "端口文件")
 	flag.StringVar(&options.TopPorts, "top", "", "常用端口,可选值:full,100,1000")
@@ -52,7 +55,7 @@ func ParseOptions() *Options {
 	flag.IntVar(&options.Tips, "tips", 5, "端口扫描提示信息间隔,默认5秒")
 	flag.StringVar(&options.Proxy, "proxy", "", "Socks5代理")
 	flag.StringVar(&options.Output, "o", "", "输出文件")
-	flag.BoolVar(&options.Version, "version", false, "显示版本")
+	flag.BoolVar(&options.Version, "v", false, "显示版本")
 
 	flag.Parse()
 
@@ -61,6 +64,16 @@ func ParseOptions() *Options {
 		color.Yellow.Printf("当前版本: %s\n", Version)
 		os.Exit(0)
 	}
+	// 检查参数
+	options.Stdin = HasStdin()
 
 	return options
+}
+
+func HasStdin() bool {
+	file, err := os.Stdin.Stat()
+	if err != nil {
+		return false
+	}
+	return (file.Mode() & os.ModeCharDevice) == 0
 }

@@ -3,8 +3,6 @@ package main
 import (
 	"3pScan/pkg/runner"
 	"3pScan/pkg/scan"
-	"os"
-	"os/signal"
 
 	"github.com/gogf/gf/os/gfile"
 	"github.com/gogf/gf/os/glog"
@@ -13,30 +11,12 @@ import (
 	"github.com/gookit/color"
 )
 
-func init() {
-	config := glog.DefaultConfig()
-	config.Path = "log"
-	config.File = "{Y-m-d}.log"
-
-	_ = glog.SetConfig(config)
-}
-
 func main() {
 
 	runner.ShowBanner()
 
-	color.White.Println(gtime.Datetime(), "程序初始化...")
 	options := runner.ParseOptions()
-	color.White.Println("本次扫描模式为:", options.Model)
-
-	// 优雅退出
-	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, os.Interrupt)
-	go func() {
-		<-sigs
-		glog.Warningf("CTRL+C 结束任务\n")
-		os.Exit(1)
-	}()
+	color.White.Println("扫描模式:", options.Model)
 
 	t := gtime.Now()
 
@@ -56,10 +36,9 @@ func main() {
 				glog.Errorf("无法创httpx扫描: %s\n", err)
 			}
 		}
-		
 	}
 
 	end := gtime.Now().Sub(t)
 
-	color.Magenta.Printf("任务结束,耗时: %s\n", (end))
+	color.Magenta.Printf("%s 任务结束,耗时: %s\n", gtime.Datetime(), (end))
 }

@@ -1,2 +1,0 @@
-tuya.com:443
-tuya.com:80
