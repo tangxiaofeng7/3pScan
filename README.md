@@ -2,7 +2,7 @@
 
 ## Features
 
- - ·Simple tool for port scan
+ - Simple tool for port scan
 
 ## Installation
 
