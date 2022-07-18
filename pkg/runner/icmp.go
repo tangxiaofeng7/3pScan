@@ -1,8 +1,5 @@
 package runner
 
-/*
-From fscan: https://github.com/shadow1ng/fscan/blob/HEAD/Plugins/icmp.go
-*/
 import (
 	"bytes"
 	"fmt"

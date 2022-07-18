@@ -1,36 +1,52 @@
 # 3pScan
 
-## 工具目标
+## Features
 
-· perfect
+· Simple powerful port scan tool
+· STDIN/OUT support for integrating in workflows
 
-· precise
-
-· Painless
-
-
-## 使用方法
+## Installation
 ```
-# 简单扫描
-./3pScan -h baidu.com -top 1000
+go install -v github.com/tangxiaofeng7/3pScan@latest
+```
 
-# 禁用ping扫描
-./3pScan -h baidu.com -Pn -top 1000
+## Usage
+```
+# Simple
 
-# 文件读取方式扫描
-./3pScan -hf url.txt -top 1000
+3pScan -h baidu.com -top 1000
 
-# 终端传入扫描
-echo 127.0.0.1 | ./3pScan
-cat url.txt | ./3pScan
+# Scan with disable ping
 
-# 全端口扫描
-./3pScan -h baidu.com -top full
-或
-./3pScan -h baidu.com -p 1-65535
+3pScan -h baidu.com -Pn -top 1000
 
-# 端口扫描进度提示，默认为5秒
-./3pScan -h baidu.com -p 1-65535 -t 10
+# Scan with read file
+
+3pScan -hf url.txt -top 1000
+
+# Scan with full ports
+
+3pScan -h baidu.com -top full
+or
+3pScan -h baidu.com -p 1-65535
+
+# Scan with show stats
+
+3pScan -h baidu.com -p 1-65535 -t 10
+
+# Scan with other tools
+
+### httpx
+
+3pScan -h baidu.com -top 1000 ｜ httpx -silent -title -status-code
+
+### nuclei
+
+3pScan -h baidu.com -top 1000 ｜ nuclei
+
+### subfinder
+
+echo baidu.com | subfinder -silent | 3pScan -top 1000
 
 ```
 

@@ -1,7 +1,7 @@
 package scan
 
 import (
-	"3pScan/pkg/runner"
+	"github.com/tangxiaofeng7/3pScan/pkg/runner"
 	"bufio"
 	"context"
 	"fmt"
@@ -22,7 +22,6 @@ import (
 	"github.com/gogf/gf/os/gtime"
 	"github.com/gogf/gf/util/guid"
 	"github.com/gookit/color"
-	httpxRunner "github.com/projectdiscovery/httpx/runner"
 )
 
 type Result struct {
@@ -121,46 +120,20 @@ func NewPortScan(options *runner.Options) (string, error) {
 	}
 
 	tempfile := PrintResults(res)
+
+	gfile.ReadLines(tempfile, func(text string) error {
+		os.Stdout.Write([]byte(text + "\n"))
+		return nil
+	})
+
+	gfile.Remove(tempfile)
+
 	stats.Stop()
 
-	color.Red.Print(gtime.Datetime(), " --------------------结束端口扫描--------------------\n\n")
+	color.Red.Print("\n", gtime.Datetime(), " --------------------结束端口扫描--------------------\n\n")
 
-	if !gfile.IsEmpty(tempfile) {
-
-	} else {
-		color.Red.Println(gtime.Datetime(), " 端口扫描完成,没有任何结果 ", "\n")
-		os.Exit(1)
-	}
 
 	return tempfile, nil
-}
-
-func NewHttpxScan(tempfile string) (string, error) {
-
-	color.Red.Print(gtime.Datetime(), " --------------------开始httpx扫描-------------------\n\n")
-	temphttpxfile := "./temp/" + guid.S() + ".txt"
-	httpxoptions := httpxRunner.Options{
-		Methods:            "GET",
-		InputFile:          tempfile,
-		ExtractTitle:       true, //返回title
-		StatusCode:         true, //返回状态
-		Timeout:            3,    //超时
-		OutputResponseTime: true, //返回响应时间
-		OutputServerHeader: true, //返回服务器头
-		Output:             temphttpxfile,
-	}
-
-	httpxRunner, err := httpxRunner.New(&httpxoptions)
-
-	if err != nil {
-		glog.Error(context.TODO(), err.Error())
-	}
-
-	defer httpxRunner.Close()
-	httpxRunner.RunEnumeration()
-	color.Red.Print("\n", gtime.Datetime(), " --------------------结束httpx扫描-------------------\n\n")
-
-	return temphttpxfile, nil
 }
 
 func scan(host string, port int) int {
@@ -176,7 +149,7 @@ func scan(host string, port int) int {
 
 func PrintResults(res []Result) (tempfile string) {
 	color.Green.Println("\nResults\n--------------")
-	tempfile = "./temp/" + guid.S() + ".txt"
+	tempfile = guid.S() + ".txt"
 	for _, b := range res {
 		color.Green.Println(b.Host, "\t", b.Port, "\topen")
 
