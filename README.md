@@ -1,5 +1,7 @@
 # 3pScan
 
+> just for fun
+
 ## Features
 
  - Simple tool for port scan
